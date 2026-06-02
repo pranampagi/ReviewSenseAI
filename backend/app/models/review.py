@@ -1,3 +1,5 @@
+"""Customer review model — ingested manually or via CSV bulk upload."""
+
 import uuid
 from datetime import datetime
 
@@ -10,6 +12,12 @@ from app.database import Base
 
 
 class Review(Base):
+    """Product review awaiting or completed ML analysis.
+
+    ``status`` flow: pending → processing → complete | failed
+    ``source``: manual | csv
+    """
+
     __tablename__ = "reviews"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

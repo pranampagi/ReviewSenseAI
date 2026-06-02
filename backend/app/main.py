@@ -1,13 +1,30 @@
+"""FastAPI application entry point.
+
+Registers CORS, health check, SQL table creation on startup, and (later) API routers.
+"""
+
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, engine
-from app.models import AnalysisResult, Product, Review, User  # noqa: F401
+from app.models import AnalysisResult, Product, Review, User  # noqa: F401 — register models
+from app.mongo import ping_mongo
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create SQL tables on startup (SQLite dev convenience). Use Alembic for production."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title=settings.app_name, version="1.0.0")
+    """Build and configure the FastAPI application instance."""
+    app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 
     app.add_middleware(
         CORSMiddleware,
@@ -17,14 +34,15 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    @app.get("/health")
+    @app.get("/health", tags=["system"])
     async def health() -> dict[str, str]:
-        return {"status": "ok", "env": settings.app_env}
-
-    @app.on_event("startup")
-    async def startup() -> None:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        """Liveness check: API status, environment name, and MongoDB connectivity."""
+        mongo_ok = await ping_mongo()
+        return {
+            "status": "ok",
+            "env": settings.app_env,
+            "mongo": "connected" if mongo_ok else "error",
+        }
 
     return app
 

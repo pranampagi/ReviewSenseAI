@@ -1,9 +1,17 @@
+"""Alembic migration environment.
+
+Imports all ORM models so autogenerate sees the full schema.
+Uses async engine for online migrations (matches ``DATABASE_URL`` in .env).
+"""
+
 from __future__ import with_statement
 
+import asyncio
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import settings
 from app.database import Base
@@ -30,9 +38,6 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
-import asyncio
-from sqlalchemy.ext.asyncio import async_engine_from_config
 
 def do_run_migrations(connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
