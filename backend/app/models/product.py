@@ -1,3 +1,5 @@
+"""Product catalog model — each product belongs to one user."""
+
 import uuid
 from datetime import datetime
 
@@ -10,6 +12,8 @@ from app.database import Base
 
 
 class Product(Base):
+    """E-commerce product that reviews are attached to."""
+
     __tablename__ = "products"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

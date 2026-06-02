@@ -1,3 +1,5 @@
+"""User account model — authentication and product ownership."""
+
 import uuid
 from datetime import datetime
 
@@ -10,6 +12,8 @@ from app.database import Base
 
 
 class User(Base):
+    """Registered user with email login and bcrypt-hashed password (set in auth service)."""
+
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

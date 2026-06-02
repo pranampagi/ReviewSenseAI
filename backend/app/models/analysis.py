@@ -1,3 +1,5 @@
+"""ML analysis results — one row per review after the pipeline completes."""
+
 import uuid
 from datetime import datetime
 
@@ -9,6 +11,12 @@ from app.database import Base
 
 
 class AnalysisResult(Base):
+    """Stores outputs from sentiment, fake-detector, and aspect models.
+
+    Aspect columns (price, quality, shipping, service) are floats in [0, 1].
+    Populated by ``analysis_service.run_full_pipeline`` (Commit #12+).
+    """
+
     __tablename__ = "analysis_results"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -18,7 +26,7 @@ class AnalysisResult(Base):
         unique=True,
         nullable=False,
     )
-    sentiment: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    sentiment: Mapped[str | None] = mapped_column(String(20), nullable=True)  # POSITIVE | NEGATIVE
     sentiment_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     is_fake: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     fake_prob: Mapped[float | None] = mapped_column(Float, nullable=True)
