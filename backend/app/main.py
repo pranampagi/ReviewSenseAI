@@ -1,6 +1,6 @@
 """FastAPI application entry point.
 
-Registers CORS, health check, SQL table creation on startup, and (later) API routers.
+Registers CORS, health check, SQL tables on startup, and API routers (auth, …).
 """
 
 from contextlib import asynccontextmanager
@@ -12,6 +12,7 @@ from app.config import settings
 from app.database import Base, engine
 from app.models import AnalysisResult, Product, Review, User  # noqa: F401 — register models
 from app.mongo import ping_mongo
+from app.routers import auth
 
 
 @asynccontextmanager
@@ -33,6 +34,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    app.include_router(auth.router, prefix="/auth")
 
     @app.get("/health", tags=["system"])
     async def health() -> dict[str, str]:
