@@ -12,7 +12,7 @@ from app.config import settings
 from app.database import Base, engine
 from app.models import AnalysisResult, Product, Review, User  # noqa: F401 — register models
 from app.mongo import ping_mongo
-from app.routers import auth
+from app.routers import auth, products
 
 
 @asynccontextmanager
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(auth.router, prefix="/auth")
+    app.include_router(products.router, prefix="/products")
 
     @app.get("/health", tags=["system"])
     async def health() -> dict[str, str]:
