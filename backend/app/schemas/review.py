@@ -1,9 +1,11 @@
-"""Review ingestion API schemas."""
+"""Review ingestion and listing API schemas."""
 
 import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, Field
+
+from app.schemas.analysis import AnalysisResultRead
 
 
 class ReviewCreate(BaseModel):
@@ -43,3 +45,18 @@ class BulkUploadResponse(BaseModel):
     job_id: str
     accepted: int
     errors: list[BulkUploadError]
+
+
+class ReviewListResponse(BaseModel):
+    """Paginated review list for the authenticated user's products."""
+
+    items: list[ReviewRead]
+    total: int
+    page: int
+    pages: int
+
+
+class ReviewDetailRead(ReviewRead):
+    """Review with optional nested analysis when the pipeline has completed."""
+
+    analysis_result: AnalysisResultRead | None = None

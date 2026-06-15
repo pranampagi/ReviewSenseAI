@@ -23,3 +23,12 @@ async def insert_ingest_log(doc: dict) -> str:
     """
     result = await get_mongo_db()["ingest_logs"].insert_one(doc)
     return str(result.inserted_id)
+
+
+async def get_ingest_log_by_job_id(job_id: str) -> dict | None:
+    """Fetch a bulk-upload job document by ``job_id`` (returns None if not found)."""
+    doc = await get_mongo_db()["ingest_logs"].find_one({"job_id": job_id})
+    if doc is None:
+        return None
+    doc["_id"] = str(doc["_id"])
+    return doc
