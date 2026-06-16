@@ -14,7 +14,7 @@ class AnalysisResult(Base):
     """Stores outputs from sentiment, fake-detector, and aspect models.
 
     Aspect columns (price, quality, shipping, service) are floats in [0, 1].
-    Populated by ``analysis_service.run_full_pipeline`` (Commit #12+).
+    Populated by ``analysis_service.run_full_pipeline`` (in later updates).
     """
 
     __tablename__ = "analysis_results"

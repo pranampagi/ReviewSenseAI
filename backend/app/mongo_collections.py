@@ -1,7 +1,6 @@
 """Helpers for MongoDB collections used during review ingestion.
 
-These are called from the review service (Commit #7+) when saving raw text
-and logging CSV bulk-upload jobs. SQL remains the source of truth for review IDs.
+These are called from the review service when saving raw text and logging CSV bulk-upload jobs. SQL remains the source of truth for review IDs.
 """
 
 from app.mongo import get_mongo_db
