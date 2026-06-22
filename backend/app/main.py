@@ -17,9 +17,15 @@ from app.routers import auth, products, reviews
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create SQL tables on startup (SQLite dev convenience). Use Alembic for production."""
+    """Create SQL tables and warm up ML models on startup."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Load DistilBERT once so the first review analysis is not slow.
+    from ml.sentiment import get_sentiment_pipeline
+
+    get_sentiment_pipeline()
+
     yield
 
 
