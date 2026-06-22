@@ -151,7 +151,7 @@ async def create_review(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ReviewRead:
-    """Submit one review for a owned product; triggers background ML pipeline (stub until #12)."""
+    """Submit one review for an owned product; triggers background ML pipeline."""
     review = await ingest_single(body, current_user, db, background_tasks)
     return review
 

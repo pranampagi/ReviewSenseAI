@@ -1,4 +1,4 @@
-"""ML analysis result schemas returned with review detail."""
+"""ML analysis result schemas returned with review detail and analytics endpoints."""
 
 import uuid
 from datetime import datetime
@@ -22,3 +22,41 @@ class AnalysisResultRead(BaseModel):
     completed_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+class SentimentTrendPoint(BaseModel):
+    """One day of aggregated sentiment for a product."""
+
+    date: str
+    avg_score: float
+    positive_count: int
+    negative_count: int
+
+
+class FakeAlertItem(BaseModel):
+    """One flagged review in the fake-alerts panel."""
+
+    review_id: uuid.UUID
+    product_id: uuid.UUID
+    product_name: str
+    body_excerpt: str
+    fake_prob: float | None
+    created_at: datetime
+
+
+class FakeAlertListResponse(BaseModel):
+    """Paginated fake review alerts."""
+
+    items: list[FakeAlertItem]
+    total: int
+    page: int
+    pages: int
+
+
+class AspectSummary(BaseModel):
+    """Average aspect sentiment scores for a product."""
+
+    price: float
+    quality: float
+    shipping: float
+    service: float
