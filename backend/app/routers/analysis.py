@@ -1,5 +1,6 @@
 """ML analysis and analytics routes."""
 
+import asyncio
 import uuid
 from datetime import datetime
 
@@ -12,7 +13,12 @@ from app.dependencies import get_current_user
 from app.models.product import Product
 from app.models.review import Review
 from app.models.user import User
-from app.schemas.analysis import AspectSummary, FakeAlertListResponse, SentimentTrendPoint
+from app.schemas.analysis import (
+    AspectSummary,
+    AspectTextRequest,
+    FakeAlertListResponse,
+    SentimentTrendPoint,
+)
 from app.services.analysis_service import (
     get_aspect_summary,
     get_fake_alerts,
@@ -78,6 +84,18 @@ async def fake_alerts(
     if product_id is not None:
         await _assert_product_owned(product_id, current_user, db)
     return await get_fake_alerts(current_user.id, product_id, page, limit, db)
+
+
+@router.post("/aspects", response_model=AspectSummary)
+async def analyze_aspects(
+    body: AspectTextRequest,
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Run the trained aspect model on review text and return four aspect scores."""
+    from ml.aspect.infer import predict_aspects
+
+    _ = current_user
+    return await asyncio.to_thread(predict_aspects, body.text)
 
 
 @router.get("/aspect-summary/{product_id}", response_model=AspectSummary)

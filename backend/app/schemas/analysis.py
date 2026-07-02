@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AnalysisResultRead(BaseModel):
@@ -60,3 +60,9 @@ class AspectSummary(BaseModel):
     quality: float
     shipping: float
     service: float
+
+
+class AspectTextRequest(BaseModel):
+    """Body for ``POST /analyze/aspects`` — run aspect model on arbitrary text."""
+
+    text: str = Field(min_length=1, description="Review text to score")

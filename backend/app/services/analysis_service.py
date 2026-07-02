@@ -189,8 +189,8 @@ async def get_aspect_summary(
     )
     row = (await db.execute(stmt)).one()
     return {
-        "price": round(float(row.price or 0.5), 4),
-        "quality": round(float(row.quality or 0.5), 4),
-        "shipping": round(float(row.shipping or 0.5), 4),
-        "service": round(float(row.service or 0.5), 4),
+        "price": round(float(row.price or 0), 4),
+        "quality": round(float(row.quality or 0), 4),
+        "shipping": round(float(row.shipping or 0), 4),
+        "service": round(float(row.service or 0), 4),
     }
