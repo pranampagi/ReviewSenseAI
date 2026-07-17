@@ -91,6 +91,19 @@ def generate_synthetic_csv(path: Path, n_per_class: int = 100) -> None:
         "Average experience, nothing special.",
         "Happy with purchase, would recommend to friends.",
         "Decent build, minor issues with packaging.",
+        "Great product, fast shipping and excellent quality!",
+        "Love it!",
+        "Good value for money",
+        "I recently purchased this and I'm absolutely loving it!",
+        "Absolutely fantastic monitor for the price!",
+        "The display itself is decent, but my experience was terrible.",
+        "I am so happy with this bag. It is a good bag.",
+        "It's an okay backpack, but definitely overpriced.",
+        "Works great!",
+        "Not bad, but could be better.",
+        "Exactly what I needed.",
+        "Five stars!",
+        "Would buy again.",
     ]
     fake_templates = [
         "BEST PRODUCT EVER!!! BUY NOW!!! FIVE STARS!!!",
@@ -98,6 +111,10 @@ def generate_synthetic_csv(path: Path, n_per_class: int = 100) -> None:
         "Perfect perfect perfect click here for discount!!!",
         "LOVE LOVE LOVE this changed my life must buy!!!",
         "Greatest item on earth five stars always!!!",
+        "Click the link in my bio for 90% off this product!!!",
+        "Make $5000 a day working from home using this item!",
+        "SCAM SCAM SCAM DO NOT BUY THIS!!!",
+        "I am a bot and this is a fake review.",
     ]
 
     for i in range(n_per_class):

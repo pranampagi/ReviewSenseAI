@@ -2,6 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/axios'
+import BulkUpload from '@/components/BulkUpload.vue'
+import ReviewForm from '@/components/ReviewForm.vue'
 import { useProductsStore } from '@/stores/products'
 
 const route = useRoute()
@@ -13,8 +15,11 @@ const reviews = ref([])
 const reviewsLoading = ref(false)
 const reviewPagination = ref({ page: 1, pages: 1, total: 0 })
 const deleteError = ref('')
+const showReviewForm = ref(false)
+const successToast = ref('')
 
 const product = computed(() => store.currentProduct)
+const productId = computed(() => String(route.params.id))
 
 async function loadProduct() {
   try {
@@ -73,6 +78,22 @@ function sentimentClass(sentiment) {
   return sentiment === 'POSITIVE' ? 'sentiment-badge-positive' : 'sentiment-badge-negative'
 }
 
+function onReviewSubmitted() {
+  successToast.value = 'Review submitted. Analysis may take a few seconds.'
+  loadReviews(1)
+  setTimeout(() => {
+    successToast.value = ''
+  }, 4000)
+}
+
+function onUploadComplete() {
+  successToast.value = 'Bulk upload finished. Refreshing reviews…'
+  loadReviews(1)
+  setTimeout(() => {
+    successToast.value = ''
+  }, 4000)
+}
+
 onMounted(async () => {
   await loadProduct()
   await loadReviews(1)
@@ -97,14 +118,15 @@ watch(
         <p class="text-muted mb-0">{{ product.category || 'Uncategorized' }}</p>
         <p v-if="product.description" class="mt-2 mb-0">{{ product.description }}</p>
       </div>
-      <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteProduct">
+      <button type="button" class="btn btn-premium-danger shadow-sm px-3 py-1" style="border-radius: 8px;" @click="deleteProduct">
         Delete product
       </button>
     </div>
 
     <div v-if="deleteError" class="alert alert-danger">{{ deleteError }}</div>
+    <div v-if="successToast" class="alert alert-success">{{ successToast }}</div>
 
-    <ul class="nav nav-tabs mb-4">
+    <ul class="nav nav-pills-premium mb-4">
       <li class="nav-item">
         <button
           type="button"
@@ -128,16 +150,26 @@ watch(
     </ul>
 
     <div v-show="activeTab === 'reviews'">
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <button type="button" class="btn btn-premium px-3 py-1" @click="showReviewForm = true">
+          Add review
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <BulkUpload :product-id="productId" @upload-complete="onUploadComplete" />
+      </div>
+
       <div v-if="reviewsLoading" class="text-muted py-3">Loading reviews…</div>
       <div v-else-if="reviews.length === 0" class="alert alert-light border">
         No reviews for this product yet.
       </div>
       <div v-else class="vstack gap-3">
-        <div v-for="review in reviews" :key="review.id" class="card shadow-sm review-card">
+        <div v-for="review in reviews" :key="review.id" class="card glass-panel border-0 review-card mb-3">
           <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
               <div>
-                <span class="badge bg-secondary me-2">{{ review.rating }}★</span>
+                <span class="badge bg-light text-dark shadow-sm border me-2">{{ review.rating }}★</span>
                 <span class="text-muted small">{{ review.author || 'Anonymous' }}</span>
               </div>
               <div class="d-flex gap-2 flex-wrap">
@@ -162,7 +194,7 @@ watch(
       </div>
 
       <nav v-if="reviewPagination.pages > 1" class="mt-4" aria-label="Review pagination">
-        <ul class="pagination justify-content-center mb-0">
+        <ul class="pagination pagination-premium justify-content-center mb-0">
           <li class="page-item" :class="{ disabled: reviewPagination.page <= 1 }">
             <button
               type="button"
@@ -198,11 +230,17 @@ watch(
       </nav>
     </div>
 
-    <div v-show="activeTab === 'analytics'" class="card shadow-sm">
+    <div v-show="activeTab === 'analytics'" class="card glass-panel border-0">
       <div class="card-body p-4 text-muted">
         Aspect radar and sentiment charts.
       </div>
     </div>
+
+    <ReviewForm
+      v-model:show="showReviewForm"
+      :product-id="productId"
+      @review-submitted="onReviewSubmitted"
+    />
   </div>
 </template>
 
@@ -214,12 +252,15 @@ watch(
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .sentiment-badge-positive {
-  background-color: #198754;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
 }
 .sentiment-badge-negative {
-  background-color: #dc3545;
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  color: white;
 }
 .fake-alert-badge {
-  background-color: #fd7e14;
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+  color: white;
 }
 </style>

@@ -25,12 +25,16 @@ def get_sentiment_pipeline():
 
 
 def analyse(text: str) -> dict:
-    """Classify review text as POSITIVE or NEGATIVE with a confidence score.
+    """Classify review text as POSITIVE or NEGATIVE with a positivity score.
 
     Returns ``{"sentiment": "POSITIVE"|"NEGATIVE", "sentiment_score": float}``.
     """
     result = get_sentiment_pipeline()(text[:1000])[0]
+    score = float(result["score"])
+    if result["label"] == "NEGATIVE":
+        score = 1.0 - score
+
     return {
         "sentiment": result["label"],
-        "sentiment_score": round(float(result["score"]), 4),
+        "sentiment_score": round(score, 4),
     }

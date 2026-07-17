@@ -98,16 +98,17 @@ onMounted(() => loadProducts(1))
 
     <div v-else class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
       <div v-for="product in store.products" :key="product.id" class="col">
-        <div class="card h-100 shadow-sm review-card">
+        <div class="card h-100 glass-panel border-0 review-card">
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ product.name }}</h5>
             <p class="text-muted small mb-1">
               {{ product.category || 'Uncategorized' }}
             </p>
-            <p class="small mb-3">{{ product.reviewCount }} review(s)</p>
+            <p class="small mb-3">{{ product.reviewCount }} {{ product.reviewCount === 1 ? 'review' : 'reviews' }}</p>
             <button
               type="button"
-              class="btn btn-outline-primary btn-sm mt-auto align-self-start"
+              class="btn btn-premium px-3 py-1 mt-auto align-self-start"
+              style="font-size: 0.875rem;"
               @click="goToProduct(product.id)"
             >
               View Details
@@ -118,7 +119,7 @@ onMounted(() => loadProducts(1))
     </div>
 
     <nav v-if="store.pagination.pages > 1" class="mt-4" aria-label="Product pagination">
-      <ul class="pagination justify-content-center mb-0">
+      <ul class="pagination pagination-premium justify-content-center mb-0">
         <li class="page-item" :class="{ disabled: store.pagination.page <= 1 }">
           <button
             type="button"
