@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 
-test('visits the app root url', async ({ page }) => {
+test('redirects unauthenticated users to login', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.navbar-brand')).toHaveText('ReviewSense AI')
+  await expect(page).toHaveURL(/\/login/)
+  await expect(page.locator('h2')).toHaveText('Sign in')
 })
