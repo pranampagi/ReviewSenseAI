@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/axios'
+import AspectRadar from '@/components/AspectRadar.vue'
 import BulkUpload from '@/components/BulkUpload.vue'
 import ReviewForm from '@/components/ReviewForm.vue'
 import { useProductsStore } from '@/stores/products'
@@ -17,6 +18,9 @@ const reviewPagination = ref({ page: 1, pages: 1, total: 0 })
 const deleteError = ref('')
 const showReviewForm = ref(false)
 const successToast = ref('')
+const aspectSummary = ref(null)
+const aspectLoading = ref(false)
+const aspectError = ref('')
 
 const product = computed(() => store.currentProduct)
 const productId = computed(() => String(route.params.id))
@@ -94,6 +98,27 @@ function onUploadComplete() {
   }, 4000)
 }
 
+async function loadAspectSummary() {
+  aspectLoading.value = true
+  aspectError.value = ''
+  try {
+    const { data } = await api.get(`/analyze/aspect-summary/${route.params.id}`)
+    aspectSummary.value = data
+  } catch (err) {
+    aspectError.value = err.response?.data?.detail || 'Could not load aspect summary.'
+    aspectSummary.value = null
+  } finally {
+    aspectLoading.value = false
+  }
+}
+
+function onAnalyticsTab() {
+  activeTab.value = 'analytics'
+  if (!aspectSummary.value && !aspectLoading.value) {
+    loadAspectSummary()
+  }
+}
+
 onMounted(async () => {
   await loadProduct()
   await loadReviews(1)
@@ -102,10 +127,20 @@ onMounted(async () => {
 watch(
   () => route.params.id,
   async () => {
+    aspectSummary.value = null
     await loadProduct()
     await loadReviews(1)
+    if (activeTab.value === 'analytics') {
+      await loadAspectSummary()
+    }
   },
 )
+
+watch(activeTab, (tab) => {
+  if (tab === 'analytics' && !aspectSummary.value && !aspectLoading.value) {
+    loadAspectSummary()
+  }
+})
 </script>
 
 <template>
@@ -142,7 +177,7 @@ watch(
           type="button"
           class="nav-link"
           :class="{ active: activeTab === 'analytics' }"
-          @click="activeTab = 'analytics'"
+          @click="onAnalyticsTab"
         >
           Analytics
         </button>
@@ -231,8 +266,11 @@ watch(
     </div>
 
     <div v-show="activeTab === 'analytics'" class="card glass-panel border-0">
-      <div class="card-body p-4 text-muted">
-        Aspect radar and sentiment charts.
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Aspect sentiment</h5>
+        <div v-if="aspectError" class="alert alert-danger">{{ aspectError }}</div>
+        <div v-if="aspectLoading" class="text-muted py-5 text-center">Loading aspect chart…</div>
+        <AspectRadar v-else :data="aspectSummary || {}" />
       </div>
     </div>
 

@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
 import api from '@/api/axios'
+import FakeAlertPanel from '@/components/FakeAlertPanel.vue'
 import SentimentChart from '@/components/SentimentChart.vue'
 import { useProductsStore } from '@/stores/products'
 
@@ -86,11 +87,18 @@ watch([productId, startDate, endDate], () => {
 
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
-    <div class="card glass-panel border-0">
+    <div class="card glass-panel border-0 mb-4">
       <div class="card-body">
         <h5 class="card-title mb-3">Sentiment trend</h5>
         <div v-if="loading" class="text-muted py-5 text-center">Loading chart…</div>
         <SentimentChart v-else :data="trendData" />
+      </div>
+    </div>
+
+    <div class="card glass-panel border-0">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Fake review alerts</h5>
+        <FakeAlertPanel :product-id="productId" />
       </div>
     </div>
   </div>
