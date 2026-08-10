@@ -204,7 +204,7 @@ watch(activeTab, (tab) => {
           <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
               <div>
-                <span class="badge bg-light text-dark shadow-sm border me-2">{{ review.rating }}★</span>
+                <span class="badge badge-rating me-2">{{ review.rating }}★</span>
                 <span class="text-muted small">{{ review.author || 'Anonymous' }}</span>
               </div>
               <div class="d-flex gap-2 flex-wrap">
@@ -218,7 +218,7 @@ watch(activeTab, (tab) => {
                 <span v-if="review.analysis_result?.is_fake" class="badge fake-alert-badge">
                   Likely fake
                 </span>
-                <span v-else-if="review.status === 'pending'" class="badge bg-warning text-dark">
+                <span v-else-if="review.status === 'pending'" class="badge badge-analysis-pending">
                   Analysing…
                 </span>
               </div>
@@ -287,18 +287,6 @@ watch(activeTab, (tab) => {
   transition: box-shadow 0.2s;
 }
 .review-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.sentiment-badge-positive {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-.sentiment-badge-negative {
-  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-  color: white;
-}
-.fake-alert-badge {
-  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
-  color: white;
+  box-shadow: var(--shadow-md);
 }
 </style>

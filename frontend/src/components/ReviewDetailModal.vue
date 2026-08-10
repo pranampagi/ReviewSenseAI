@@ -5,6 +5,7 @@
  */
 import { ref, watch } from 'vue'
 import api from '@/api/axios'
+import { formatDate } from '@/utils/formatters'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -19,14 +20,6 @@ const error = ref('')
 
 function close() {
   emit('update:show', false)
-}
-
-function formatDate(value) {
-  if (!value) return '—'
-  const date = new Date(value)
-  const datePart = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
-  const timePart = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).format(date)
-  return `${datePart}, ${timePart}`
 }
 
 function formatScore(value) {
@@ -72,7 +65,7 @@ watch(
     @click.self="close"
   >
     <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
-      <div class="modal-content glass-panel border-0 animate-enter" style="background: linear-gradient(135deg, rgba(238, 242, 255, 0.95) 0%, rgba(253, 232, 243, 0.95) 100%);">
+      <div class="modal-content glass-panel modal-premium-bg border-0 animate-enter">
         <div class="modal-header border-0">
           <h5 class="modal-title">Review details</h5>
           <button type="button" class="btn-close" aria-label="Close" @click="close" />
@@ -101,10 +94,10 @@ watch(
                     <div class="small text-muted mb-3 text-uppercase fw-semibold" style="letter-spacing: 0.5px">Sentiment</div>
                     <div class="d-flex align-items-center gap-3">
                       <span class="badge rounded-pill px-3 py-2 text-capitalize fs-6" :class="{
-                        'bg-success-subtle text-success border border-success-subtle': review.analysis_result.sentiment === 'positive',
-                        'bg-danger-subtle text-danger border border-danger-subtle': review.analysis_result.sentiment === 'negative',
-                        'bg-secondary-subtle text-secondary border border-secondary-subtle': review.analysis_result.sentiment === 'neutral',
-                        'bg-light text-dark border': !['positive', 'negative', 'neutral'].includes(review.analysis_result.sentiment)
+                        'bg-success-subtle text-success border border-success-subtle': review.analysis_result.sentiment?.toLowerCase() === 'positive',
+                        'bg-danger-subtle text-danger border border-danger-subtle': review.analysis_result.sentiment?.toLowerCase() === 'negative',
+                        'bg-secondary-subtle text-secondary border border-secondary-subtle': review.analysis_result.sentiment?.toLowerCase() === 'neutral',
+                        'bg-light text-body border': !['positive', 'negative', 'neutral'].includes(review.analysis_result.sentiment?.toLowerCase())
                       }">
                         {{ review.analysis_result.sentiment || 'Unknown' }}
                       </span>

@@ -4,6 +4,8 @@
  * Expects data from GET /analyze/aspect-summary/{product_id}.
  */
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useThemeStore } from '@/stores/theme'
 
 const props = defineProps({
   data: {
@@ -17,6 +19,9 @@ const props = defineProps({
   },
 })
 
+const { theme } = storeToRefs(useThemeStore())
+const isDark = computed(() => theme.value === 'dark')
+
 const hasData = computed(() =>
   ['price', 'quality', 'shipping', 'service'].some((key) => props.data[key] > 0),
 )
@@ -27,7 +32,9 @@ const chartOptions = computed(() => ({
     toolbar: { show: false },
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     background: 'transparent',
+    foreColor: isDark.value ? '#94a3b8' : '#64748b',
   },
+  theme: { mode: isDark.value ? 'dark' : 'light' },
   xaxis: {
     categories: ['Price', 'Quality', 'Shipping', 'Service'],
   },
@@ -45,7 +52,7 @@ const chartOptions = computed(() => ({
   markers: { size: 4 },
   legend: { show: false },
   tooltip: {
-    theme: 'light',
+    theme: isDark.value ? 'dark' : 'light',
     y: {
       formatter: (value) => `${Math.round(value * 100)}% positive`,
     },

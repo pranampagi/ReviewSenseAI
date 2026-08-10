@@ -2,9 +2,10 @@
 /**
  * Paginated table of reviews flagged as likely fake (GET /analyze/fake-alerts).
  */
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import api from '@/api/axios'
 import ReviewDetailModal from '@/components/ReviewDetailModal.vue'
+import { formatDateShort } from '@/utils/formatters'
 
 const props = defineProps({
   productId: { type: String, default: '' },
@@ -17,10 +18,7 @@ const error = ref('')
 const selectedReviewId = ref('')
 const showDetailModal = ref(false)
 
-function formatDate(value) {
-  if (!value) return '—'
-  return new Date(value).toLocaleDateString()
-}
+
 
 function fakePercent(value) {
   if (value == null) return 0
@@ -47,6 +45,36 @@ async function loadAlerts(page = 1) {
     loading.value = false
   }
 }
+
+const visiblePages = computed(() => {
+  const current = pagination.value.page
+  const total = pagination.value.pages
+  const delta = 2
+  const left = current - delta
+  const right = current + delta + 1
+  const pages = []
+  
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= left && i < right)) {
+      pages.push(i)
+    }
+  }
+  
+  const result = []
+  let l
+  for (const i of pages) {
+    if (l) {
+      if (i - l === 2) {
+        result.push(l + 1)
+      } else if (i - l !== 1) {
+        result.push('...')
+      }
+    }
+    result.push(i)
+    l = i
+  }
+  return result
+})
 
 function changePage(page) {
   if (page < 1 || page > pagination.value.pages) return
@@ -81,20 +109,20 @@ watch(
     </div>
 
     <div v-else class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table class="table table-hover align-middle mb-0" style="table-layout: fixed;">
         <thead>
           <tr>
-            <th scope="col">Review excerpt</th>
-            <th v-if="!productId" scope="col">Product</th>
-            <th scope="col" style="min-width: 160px">Fake probability</th>
-            <th scope="col">Date</th>
-            <th scope="col">Actions</th>
+            <th scope="col" :style="{ width: !productId ? '35%' : '45%' }">Review excerpt</th>
+            <th v-if="!productId" scope="col" style="width: 20%;">Product</th>
+            <th scope="col" :style="{ width: !productId ? '20%' : '25%' }">Fake probability</th>
+            <th scope="col" :style="{ width: !productId ? '15%' : '15%' }">Date</th>
+            <th scope="col" :style="{ width: !productId ? '10%' : '15%' }">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in items" :key="item.review_id">
-            <td class="text-break">{{ item.body_excerpt }}</td>
-            <td v-if="!productId">{{ item.product_name }}</td>
+            <td class="text-truncate" :title="item.body_excerpt">{{ item.body_excerpt }}</td>
+            <td v-if="!productId" class="text-truncate" :title="item.product_name">{{ item.product_name }}</td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 <div class="progress flex-grow-1" style="height: 8px">
@@ -110,11 +138,11 @@ watch(
                 <span class="small text-nowrap">{{ fakePercent(item.fake_prob) }}%</span>
               </div>
             </td>
-            <td class="text-nowrap">{{ formatDate(item.created_at) }}</td>
+            <td class="text-nowrap">{{ formatDateShort(item.created_at) }}</td>
             <td>
               <button
                 type="button"
-                class="btn btn-sm btn-outline-danger"
+                class="btn btn-sm btn-premium-danger"
                 @click="openReview(item.review_id)"
               >
                 View full review
@@ -133,14 +161,15 @@ watch(
           </button>
         </li>
         <li
-          v-for="page in pagination.pages"
-          :key="page"
+          v-for="(page, index) in visiblePages"
+          :key="index"
           class="page-item"
-          :class="{ active: page === pagination.page }"
+          :class="{ active: page === pagination.page, disabled: page === '...' }"
         >
-          <button type="button" class="page-link" @click="changePage(page)">
+          <button v-if="page !== '...'" type="button" class="page-link" @click="changePage(page)">
             {{ page }}
           </button>
+          <span v-else class="page-link">...</span>
         </li>
         <li class="page-item" :class="{ disabled: pagination.page >= pagination.pages }">
           <button type="button" class="page-link" @click="changePage(pagination.page + 1)">

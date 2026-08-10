@@ -4,6 +4,8 @@
  * Expects rows: { date, avg_score, positive_count, negative_count }.
  */
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useThemeStore } from '@/stores/theme'
 
 const props = defineProps({
   data: {
@@ -12,13 +14,18 @@ const props = defineProps({
   },
 })
 
+const { theme } = storeToRefs(useThemeStore())
+const isDark = computed(() => theme.value === 'dark')
+
 const chartOptions = computed(() => ({
   chart: { 
     id: 'sentiment-trend', 
     toolbar: { show: false },
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-    background: 'transparent'
+    background: 'transparent',
+    foreColor: isDark.value ? '#94a3b8' : '#64748b',
   },
+  theme: { mode: isDark.value ? 'dark' : 'light' },
   stroke: { curve: 'smooth', width: 3 },
   fill: {
     type: 'solid',
@@ -28,11 +35,12 @@ const chartOptions = computed(() => ({
     bar: { borderRadius: 4, columnWidth: '50%' }
   },
   grid: { 
-    borderColor: '#e2e8f0', 
+    borderColor: 'var(--chart-grid)', 
     strokeDashArray: 4, 
     position: 'back' 
   },
   xaxis: {
+    type: 'datetime',
     categories: props.data.map((row) => row.date),
     title: { text: 'Date' },
   },
@@ -51,9 +59,12 @@ const chartOptions = computed(() => ({
   legend: { position: 'top' },
   dataLabels: { enabled: false },
   tooltip: {
-    theme: 'light',
+    theme: isDark.value ? 'dark' : 'light',
     style: { fontSize: '13px' },
-    fillSeriesColor: false
+    fillSeriesColor: false,
+    x: {
+      format: 'dd MMM yyyy'
+    }
   }
 }))
 
@@ -94,16 +105,18 @@ const series = computed(() => {
 
 <style scoped>
 :deep(.apexcharts-tooltip) {
-  background: rgba(255, 255, 255, 0.85) !important;
+  background: var(--chart-tooltip-bg) !important;
+  color: var(--text-main) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid var(--surface-glass-border) !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
   border-radius: 8px !important;
 }
 :deep(.apexcharts-tooltip-title) {
   background: transparent !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  color: var(--text-main) !important;
+  border-bottom: 1px solid var(--surface-glass-border) !important;
   font-family: 'Outfit', sans-serif !important;
   font-weight: 600 !important;
   padding-bottom: 4px !important;
