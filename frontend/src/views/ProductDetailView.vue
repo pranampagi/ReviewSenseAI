@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/axios'
 import AspectRadar from '@/components/AspectRadar.vue'
 import BulkUpload from '@/components/BulkUpload.vue'
+import ReviewDetailModal from '@/components/ReviewDetailModal.vue'
 import ReviewForm from '@/components/ReviewForm.vue'
 import { useProductsStore } from '@/stores/products'
 
@@ -17,6 +18,8 @@ const reviewsLoading = ref(false)
 const reviewPagination = ref({ page: 1, pages: 1, total: 0 })
 const deleteError = ref('')
 const showReviewForm = ref(false)
+const showReviewDetail = ref(false)
+const selectedReviewId = ref('')
 const successToast = ref('')
 const aspectSummary = ref(null)
 const aspectLoading = ref(false)
@@ -119,6 +122,18 @@ function onAnalyticsTab() {
   }
 }
 
+function openReviewDetail(reviewId) {
+  selectedReviewId.value = String(reviewId)
+  showReviewDetail.value = true
+}
+
+function onAnalysisComplete() {
+  loadReviews(reviewPagination.value.page)
+  if (activeTab.value === 'analytics') {
+    loadAspectSummary()
+  }
+}
+
 onMounted(async () => {
   await loadProduct()
   await loadReviews(1)
@@ -200,7 +215,15 @@ watch(activeTab, (tab) => {
         No reviews for this product yet.
       </div>
       <div v-else class="vstack gap-3">
-        <div v-for="review in reviews" :key="review.id" class="card glass-panel border-0 review-card mb-3">
+        <div
+          v-for="review in reviews"
+          :key="review.id"
+          class="card glass-panel border-0 review-card mb-3"
+          role="button"
+          tabindex="0"
+          @click="openReviewDetail(review.id)"
+          @keydown.enter="openReviewDetail(review.id)"
+        >
           <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
               <div>
@@ -224,6 +247,7 @@ watch(activeTab, (tab) => {
               </div>
             </div>
             <p class="mb-0">{{ review.body }}</p>
+            <div class="small text-muted mt-2">Click for full ML breakdown</div>
           </div>
         </div>
       </div>
@@ -279,14 +303,25 @@ watch(activeTab, (tab) => {
       :product-id="productId"
       @review-submitted="onReviewSubmitted"
     />
+
+    <ReviewDetailModal
+      v-model:show="showReviewDetail"
+      :review-id="selectedReviewId"
+      @analysis-complete="onAnalysisComplete"
+    />
   </div>
 </template>
 
 <style scoped>
 .review-card {
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
 }
 .review-card:hover {
   box-shadow: var(--shadow-md);
+}
+.review-card:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 </style>

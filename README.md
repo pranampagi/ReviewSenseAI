@@ -82,6 +82,8 @@ Open http://localhost:5173 — register, then use Products and Analytics.
 
 **Stack:** Vue 3, Vite, Pinia, Vue Router, Bootstrap 5, ApexCharts, Axios — **JavaScript only** (no TypeScript).
 
+Use the **Dark / Light** toggle in the navbar to switch themes (preference is saved in `localStorage`).
+
 ---
 
 ## ML model setup (run once per machine)
@@ -109,16 +111,43 @@ python -m ml.aspect.train --generate-synthetic --epochs 10
 
 | Route | Description |
 |-------|-------------|
-| `/login`, `/register` | JWT authentication |
+| `/login`, `/register` | JWT authentication with route guards |
 | `/dashboard` | Protected home |
 | `/products` | Product card grid, search, pagination, add modal |
-| `/products/:id` | Product detail — reviews tab, single review form, CSV bulk upload |
-| `/analytics` | Sentiment trend chart |
+| `/products/:id` | Product detail — reviews + analytics tabs |
+| `/analytics` | Sentiment trend chart + fake review alerts panel |
 
-**Product detail — Reviews tab:**
+**Product detail — Reviews tab**
 - **Add review** modal (`ReviewForm.vue`) — author, 1–5 stars, body (min 20 chars)
 - **Bulk CSV upload** (`BulkUpload.vue`) — drag-drop, 10MB limit, progress bar, polls job status
-- Review cards show sentiment and fake-review badges when analysis is complete
+- Review cards show global sentiment, fake, and pending badges when analysis runs
+- Click a review card to open **ReviewDetailModal** — full ML breakdown, polls while pending, supports re-run
+
+**Product detail — Analytics tab**
+- **Aspect radar chart** (`AspectRadar.vue`) — average price / quality / shipping / service scores from `GET /analyze/aspect-summary/{product_id}`
+
+**Analytics page**
+- **Sentiment trend** (`SentimentChart.vue`) — product + date filters → `GET /analyze/sentiment-trend`
+- **Fake review alerts** (`FakeAlertPanel.vue`) — paginated table with probability bars → `GET /analyze/fake-alerts`; **View full review** opens `ReviewDetailModal.vue`
+
+**UI polish (Commits #23–#24)**
+- Collapsible mobile navbar
+- Dark / light theme toggle (`stores/theme.js`) with chart theming
+- Shared ML badge styles in `custom.css` (`badge-sentiment-positive`, `badge-fake-alert`, etc.)
+- Review detail modal with live polling and re-run analysis
+
+---
+
+## Key components
+
+| Component | Purpose |
+|-----------|---------|
+| `ReviewForm.vue` | Single review submission modal |
+| `BulkUpload.vue` | CSV bulk ingest with job polling |
+| `SentimentChart.vue` | Daily sentiment line + bar chart |
+| `AspectRadar.vue` | Four-axis aspect sentiment radar |
+| `FakeAlertPanel.vue` | Paginated fake-review alert table |
+| `ReviewDetailModal.vue` | Full review + ML breakdown; polls pending analysis; re-run button |
 
 ---
 
@@ -200,9 +229,11 @@ ReviewSenseAI/
 └── frontend/             # Vue 3 SPA (JavaScript)
     ├── src/
     │   ├── api/axios.js
-    │   ├── stores/       # auth.js, products.js
-    │   ├── views/        # Login, Products, Analytics, …
-    │   └── components/   # ReviewForm, BulkUpload, SentimentChart, …
+    │   ├── stores/       # auth.js, products.js, theme.js
+    │   ├── assets/custom.css
+    │   ├── views/        # Login, Products, ProductDetail, Analytics, …
+    │   └── components/   # ReviewForm, BulkUpload, SentimentChart,
+    │                       # AspectRadar, FakeAlertPanel, ReviewDetailModal
     └── vite.config.js
 ```
 
