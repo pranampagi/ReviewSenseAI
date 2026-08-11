@@ -65,6 +65,34 @@ uvicorn app.main:app --reload --port 8000
 
 ---
 
+## Backend tests
+
+Install dev dependencies, then run pytest from `backend/`:
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+With **uv** (no venv activation required):
+
+```bash
+cd backend
+uv run --with pytest --with pytest-asyncio --with httpx pytest tests/ -v
+```
+
+| File | Coverage |
+|------|----------|
+| `tests/test_auth.py` | Register, login, refresh, `/me`, health |
+| `tests/test_reviews.py` | Product CRUD, review ingest, list, detail with analysis |
+| `tests/test_ml.py` | Text preprocessing, feature pipeline, optional model inference |
+| `tests/conftest.py` | In-memory SQLite, mocked MongoDB / background ML |
+
+Tests use an isolated in-memory database — no MongoDB or DistilBERT download required for the API suite. ML model inference tests run when trained artifacts exist under `backend/ml/models/`.
+
+---
+
 ## Frontend setup
 
 ```bash
@@ -224,8 +252,11 @@ ReviewSenseAI/
 ├── backend/
 │   ├── app/              # FastAPI routers, services, models
 │   ├── ml/               # ML pipelines + training scripts
+│   ├── tests/            # pytest — auth, reviews, ML
 │   ├── alembic/
-│   └── requirements.txt
+│   ├── pytest.ini
+│   ├── requirements.txt
+│   └── requirements-dev.txt
 └── frontend/             # Vue 3 SPA (JavaScript)
     ├── src/
     │   ├── api/axios.js
