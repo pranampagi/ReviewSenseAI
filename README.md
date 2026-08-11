@@ -16,7 +16,7 @@ FastAPI (backend/app)
   ├── /reviews     → ingest, list, bulk CSV
   └── /analyze     → sentiment trend, fake alerts, aspects, rerun
         │
-        ├── SQL (SQLite dev / PostgreSQL prod)
+        ├── SQL (SQLite dev / PostgreSQL prod via asyncpg)
         │     users, products, reviews, analysis_results
         └── MongoDB
               raw_reviews, ingest_logs
@@ -36,12 +36,14 @@ ML layer (backend/ml)
 
 - Python 3.11+ (3.13 works with pinned `pymongo` in `requirements.txt`)
 - MongoDB 7 (local or Docker)
-- Node.js 20+
-- Optional: [uv](https://github.com/astral-sh/uv) for faster installs
+- Node.js 22+ (see `frontend/package.json` engines)
+- Optional: [uv](https://github.com/astral-sh/uv), Docker Compose
 
 ---
 
-## Backend setup
+## Quick start (local)
+
+### Backend
 
 ```bash
 cd backend
@@ -55,45 +57,16 @@ cp .env.example .env
 
 alembic upgrade head
 
+# Mongo only (if not using docker-compose):
 docker run -d --name reviewsense-mongo -p 27017:27017 mongo:7
 
 uvicorn app.main:app --reload --port 8000
 ```
 
-- Swagger UI: http://localhost:8000/docs  
-- Health: http://localhost:8000/health  
+- Swagger UI: http://localhost:8000/docs
+- Health: http://localhost:8000/health
 
----
-
-## Backend tests
-
-Install dev dependencies, then run pytest from `backend/`:
-
-```bash
-cd backend
-pip install -r requirements-dev.txt
-pytest tests/ -v
-```
-
-With **uv** (no venv activation required):
-
-```bash
-cd backend
-uv run --with pytest --with pytest-asyncio --with httpx pytest tests/ -v
-```
-
-| File | Coverage |
-|------|----------|
-| `tests/test_auth.py` | Register, login, refresh, `/me`, health |
-| `tests/test_reviews.py` | Product CRUD, review ingest, list, detail with analysis |
-| `tests/test_ml.py` | Text preprocessing, feature pipeline, optional model inference |
-| `tests/conftest.py` | In-memory SQLite, mocked MongoDB / background ML |
-
-Tests use an isolated in-memory database — no MongoDB or DistilBERT download required for the API suite. ML model inference tests run when trained artifacts exist under `backend/ml/models/`.
-
----
-
-## Frontend setup
+### Frontend
 
 ```bash
 cd frontend
@@ -111,6 +84,38 @@ Open http://localhost:5173 — register, then use Products and Analytics.
 **Stack:** Vue 3, Vite, Pinia, Vue Router, Bootstrap 5, ApexCharts, Axios — **JavaScript only** (no TypeScript).
 
 Use the **Dark / Light** toggle in the navbar to switch themes (preference is saved in `localStorage`).
+
+---
+
+## Docker Compose (Postgres + Mongo + API)
+
+From the repo root:
+
+```bash
+# Train ML models first (artifacts are mounted into the API container)
+cd backend
+python -m ml.train_fake_detector --generate-synthetic
+python -m ml.aspect.train --generate-synthetic --epochs 10
+cd ..
+
+docker compose up --build
+```
+
+Services:
+
+| Service | Port | Notes |
+|---------|------|--------|
+| `postgres` | 5432 | `reviewsense` / `reviewsense` / db `reviewsense` |
+| `mongo` | 27017 | Bulk-upload job logs + raw reviews |
+| `api` | 8000 | Runs `alembic upgrade head` then uvicorn |
+
+Point the API at Postgres with:
+
+```env
+DATABASE_URL=postgresql+asyncpg://reviewsense:reviewsense@localhost:5432/reviewsense
+```
+
+Alembic migrations are **async** (`alembic/env.py` uses `async_engine_from_config`) and work for both SQLite and PostgreSQL.
 
 ---
 
@@ -132,6 +137,45 @@ python -m ml.aspect.train --generate-synthetic --epochs 10
 | `ml/models/tfidf_vectorizer.pkl` | Feature pipeline |
 | `ml/models/aspect_model.pt` | Aspect biLSTM weights |
 | `ml/models/aspect_vocab.json` | Aspect tokenizer vocab |
+
+---
+
+## Backend tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+With **uv**:
+
+```bash
+cd backend
+uv run --with pytest --with pytest-asyncio --with httpx pytest tests/ -v
+```
+
+| File | Coverage |
+|------|----------|
+| `tests/test_auth.py` | Register, login, refresh, `/me`, health |
+| `tests/test_reviews.py` | Product CRUD, review ingest, list, detail with analysis |
+| `tests/test_ml.py` | Text preprocessing, feature pipeline, optional model inference |
+| `tests/conftest.py` | In-memory SQLite, mocked MongoDB / background ML |
+
+Tests use an isolated in-memory database — no MongoDB or DistilBERT download required for the API suite. ML model inference tests run when trained artifacts exist under `backend/ml/models/`.
+
+---
+
+## Continuous integration
+
+GitHub Actions workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+
+Runs on push to `main`/`master` and on pull requests:
+
+| Job | Steps |
+|-----|--------|
+| Backend | install deps → `ruff check` → `pytest` |
+| Frontend | `npm ci` → Vitest (`--passWithNoTests`) → `npm run build` |
 
 ---
 
@@ -158,15 +202,13 @@ python -m ml.aspect.train --generate-synthetic --epochs 10
 - **Sentiment trend** (`SentimentChart.vue`) — product + date filters → `GET /analyze/sentiment-trend`
 - **Fake review alerts** (`FakeAlertPanel.vue`) — paginated table with probability bars → `GET /analyze/fake-alerts`; **View full review** opens `ReviewDetailModal.vue`
 
-**UI polish (Commits #23–#24)**
+**UI polish**
 - Collapsible mobile navbar
 - Dark / light theme toggle (`stores/theme.js`) with chart theming
-- Shared ML badge styles in `custom.css` (`badge-sentiment-positive`, `badge-fake-alert`, etc.)
+- Shared ML badge styles in `custom.css`
 - Review detail modal with live polling and re-run analysis
 
----
-
-## Key components
+### Key components
 
 | Component | Purpose |
 |-----------|---------|
@@ -233,7 +275,7 @@ python -m ml.aspect.train --generate-synthetic --epochs 10
 | Variable | Required | Default / notes |
 |----------|----------|-----------------|
 | `SECRET_KEY` | Yes | JWT signing |
-| `DATABASE_URL` | Yes | `sqlite+aiosqlite:///./reviewsense.db` |
+| `DATABASE_URL` | Yes | `sqlite+aiosqlite:///./reviewsense.db` or `postgresql+asyncpg://…` |
 | `MONGODB_URL` | No | `mongodb://localhost:27017` |
 | `MONGODB_DB_NAME` | No | `reviewsense` |
 | `HF_MODEL_ID` | No | DistilBERT SST-2 model id |
@@ -249,15 +291,19 @@ See [backend/.env.example](backend/.env.example) and [frontend/.env.example](fro
 ```
 ReviewSenseAI/
 ├── README.md
+├── docker-compose.yml
+├── .github/workflows/ci.yml
 ├── backend/
+│   ├── Dockerfile
 │   ├── app/              # FastAPI routers, services, models
 │   ├── ml/               # ML pipelines + training scripts
 │   ├── tests/            # pytest — auth, reviews, ML
-│   ├── alembic/
+│   ├── alembic/          # async migrations (SQLite + PostgreSQL)
 │   ├── pytest.ini
 │   ├── requirements.txt
 │   └── requirements-dev.txt
 └── frontend/             # Vue 3 SPA (JavaScript)
+    ├── vercel.json       # SPA rewrites for Vercel
     ├── src/
     │   ├── api/axios.js
     │   ├── stores/       # auth.js, products.js, theme.js
@@ -292,6 +338,11 @@ pip install -r requirements.txt --force-reinstall
 - Set `VITE_API_URL` in `frontend/.env.local`
 - Ensure `ALLOWED_ORIGINS` includes `http://localhost:5173`
 
+### Docker API image is large / slow to start
+
+- Torch + Transformers are heavy; first DistilBERT download happens at container start
+- Mount trained `backend/ml/models` (already configured in `docker-compose.yml`)
+
 ---
 
-Portfolio project: FastAPI · SQLAlchemy · MongoDB · Scikit-learn · XGBoost · HuggingFace · PyTorch · Vue 3 · Bootstrap · ApexCharts.
+Portfolio project: FastAPI · SQLAlchemy · MongoDB · Scikit-learn · XGBoost · HuggingFace · PyTorch · Vue 3 · Bootstrap · ApexCharts · Docker · Vercel · GitHub Actions.

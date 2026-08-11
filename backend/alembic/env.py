@@ -1,16 +1,17 @@
 """Alembic migration environment.
 
 Imports all ORM models so autogenerate sees the full schema.
-Uses async engine for online migrations (matches ``DATABASE_URL`` in .env).
+Uses an async engine for online migrations so both SQLite (aiosqlite)
+and PostgreSQL (asyncpg) ``DATABASE_URL`` values work unchanged.
 """
 
-from __future__ import with_statement
+from __future__ import annotations
 
 import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import settings
@@ -22,17 +23,20 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Always prefer runtime settings over the static alembic.ini URL.
 config.set_main_option("sqlalchemy.url", settings.database_url)
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    """Generate SQL without a live database connection."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -40,12 +44,19 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    """Sync callback invoked inside ``connection.run_sync``."""
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
 
+
 async def run_async_migrations() -> None:
+    """Run online migrations with an async SQLAlchemy engine."""
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -57,8 +68,11 @@ async def run_async_migrations() -> None:
 
     await connectable.dispose()
 
+
 def run_migrations_online() -> None:
+    """Entry point for ``alembic upgrade`` / ``downgrade`` against a live DB."""
     asyncio.run(run_async_migrations())
+
 
 if context.is_offline_mode():
     run_migrations_offline()

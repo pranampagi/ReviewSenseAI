@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reviewsense-postgres
+    environment:
+      POSTGRES_USER: reviewsense
+      POSTGRES_PASSWORD: reviewsense
+      POSTGRES_DB: reviewsense
+    ports:
+      - "5432:5432"
+    volumes:
+      - reviewsense_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reviewsense -d reviewsense"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    container_name: reviewsense-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - reviewsense_mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: reviewsense-api
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: ReviewSense AI
+      APP_ENV: production
+      SECRET_KEY: change-me-in-production-use-a-long-random-string
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      DATABASE_URL: postgresql+asyncpg://reviewsense:reviewsense@postgres:5432/reviewsense
+      MONGODB_URL: mongodb://mongo:27017
+      MONGODB_DB_NAME: reviewsense
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:4173
+      ML_MODELS_DIR: ./ml/models
+    volumes:
+      # Persist / mount locally trained ML artifacts into the API container
+      - ./backend/ml/models:/app/ml/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+volumes:
+  reviewsense_pgdata:
+  reviewsense_mongodata:
